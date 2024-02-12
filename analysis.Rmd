@@ -14,29 +14,47 @@ output:
   pdf_document:
     toc: yes
     toc_depth: '4'
+editor_options: 
+  markdown: 
+    wrap: 72
 ---
 
+```{r}
+
+```
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(message=FALSE, warning=FALSE)
 ```
-<br />
-The aim of this website is to report the ongoing geospatial data analysis for the CCRI's Agricultural Transition: Great South West Partnership project. All of the tables and plots shown on this website can also be accessed as individual files [HERE](https://connectglosac.sharepoint.com/:f:/s/ccriprojects/EkmH8fOBINtNlhpJy_J-mqIBYQEk-p6fjgTJec68p_ji6A?e=hn0WaW). The full [R programming](https://www.r-project.org/about.html) code used to perform the work is included in this report, and can be accessed by clicking on the "Code" buttons. If you are unfamiliar with R code, comments (in plain English) have been added to describe the operation of each code block, so it should be possible to follow the methodology. 
+
+<br /> The aim of this website is to report the ongoing geospatial data
+analysis for the CCRI's Agricultural Transition: Great South West
+Partnership project. All of the tables and plots shown on this website
+can also be accessed as individual files
+[HERE](https://connectglosac.sharepoint.com/:f:/s/ccriprojects/EkmH8fOBINtNlhpJy_J-mqIBYQEk-p6fjgTJec68p_ji6A?e=hn0WaW).
+The full [R programming](https://www.r-project.org/about.html) code used
+to perform the work is included in this report, and can be accessed by
+clicking on the "Code" buttons. If you are unfamiliar with R code,
+comments (in plain English) have been added to describe the operation of
+each code block, so it should be possible to follow the methodology.
 
 <br />
 
 ## 1. Pillar 1: County-level
 
-This section shows the code and outputs for the analysis of Pillar 1 (P1) payments at county level (for the counties of **Cornwall**, **Devon**, **Dorset**, and **Somerset**)
+This section shows the code and outputs for the analysis of Pillar 1
+(P1) payments at county level (for the counties of **Cornwall**,
+**Devon**, **Dorset**, and **Somerset**)
 
 <br />
 
 ### 1.1 Data import & cleaning
 
-Import and cleaning of the CAP Payments (data source: [HERE](https://cap-payments.defra.gov.uk/Search.aspx))  
+Import and cleaning of the CAP Payments (data source:
+[HERE](https://cap-payments.defra.gov.uk/Search.aspx))
 
 **Step 1** - Load code packages and import data
- 
+
 ```{r echo=TRUE, eval=TRUE}
 #> 1.1.1 Load libraries 
 library(tidyverse) # data munging and analysis
@@ -86,51 +104,64 @@ db <- db %>%
 
 ```
 
+Table 1.1.1 Full database on import = *`r toString(nrow(db))`* records
+(all England)
 
-Table 1.1.1 Full database on import = *`r toString(nrow(db))`* records (all England)
 ```{r echo=FALSE, eval=TRUE, message=FALSE, warning=FALSE}
 #> Glimpse
 glimpse(db)
 ```
 
 Table 1.1.2 First 6 rows of database
+
 ```{r echo=FALSE, eval=TRUE, message=FALSE, warning=FALSE}
 #> Head
 head(db)
 ```
 
-
-
 <br />
-
 
 ### 1.2 Land cover processing
 
-The CAP Payments dataset reports payments at postcode district level, but postcode districts do not conform to administrative boundaries (e.g. counties, district unitary authorities). Our approach is to calculate the area of agricultural land (using Corine land cover data) within each postcode district, and to use this to calculate the P1 payments. For districts which straddle county boundaries, the area of agricultural land both inside and outside of the target county are calculated, and the P1 payments are calculated based on the proportion of agricultural land inside the boundary. Agricultural land cover classes were extracted from the Corine 2018 land cover dataset and used for the agricultural area calculations. 
+The CAP Payments dataset reports payments at postcode district level,
+but postcode districts do not conform to administrative boundaries (e.g.
+counties, district unitary authorities). Our approach is to calculate
+the area of agricultural land (using Corine land cover data) within each
+postcode district, and to use this to calculate the P1 payments. For
+districts which straddle county boundaries, the area of agricultural
+land both inside and outside of the target county are calculated, and
+the P1 payments are calculated based on the proportion of agricultural
+land inside the boundary. Agricultural land cover classes were extracted
+from the Corine 2018 land cover dataset and used for the agricultural
+area calculations.
 
-The following geospatial datasets are used for this analysis: <br />
- - County boundaries - [(OS BoundaryLine)](https://www.ordnancesurvey.co.uk/business-government/products/boundaryline) <br />
- - Postcode district areas - [(OpenDoor Postcode Districts)](https://www.opendoorlogistics.com/data/) <br />
- - Land Cover data - [(Corine 2018)](https://catalogue.ceh.ac.uk/documents/084e0bc6-e67f-4dad-9de6-0c698f60e34d) <br /> 
- 
+The following geospatial datasets are used for this analysis: <br /> -
+County boundaries - [(OS
+BoundaryLine)](https://www.ordnancesurvey.co.uk/business-government/products/boundaryline)
+<br /> - Postcode district areas - [(OpenDoor Postcode
+Districts)](https://www.opendoorlogistics.com/data/) <br /> - Land Cover
+data - [(Corine
+2018)](https://catalogue.ceh.ac.uk/documents/084e0bc6-e67f-4dad-9de6-0c698f60e34d)
+<br />
+
 ```{r echo=TRUE, eval=TRUE, message=FALSE, warning=FALSE, results='hide'}
 
 #> Import county boundaries
 #> Import ceremonial counties polygon layer from OS BoundaryLine dataset
-counties.sw <- st_read(here("In", "Shape", "South_West.UPDATED.3.shp"), quiet = TRUE)
+counties.sw <- st_read(here("In", "Shape", "boundary-line-ceremonial-counties-shp" ,"Boundary-line-ceremonial-counties_region.shp"), quiet = TRUE)
 
 # glimpse(counties.sw)
 
 #> Remove the deleted Bath and NE Somerset polygon (result of pre-geoprocessing in QGIS)
-counties.sw <- counties.sw |> 
-  filter(is.na(NAME_2))
+#counties.sw <- counties.sw |> 
+#  filter(is.na(NAME_2))
 
 #> Import postcode district boundary polygon data (source: https://www.opendoorlogistics.com/downloads/)
-pcodes.gb <- st_read(here("In", "Shape", "Pcode_Districts_OpenDoor_2017.shp"), quiet = TRUE)
+pcodes.gb <- st_read(here("In", "Shape", "UK-postcode-boundaries-Jan-2015" ,"Districts.shp"), quiet = TRUE)
 
 #> Import CORINE 2018 land cover data (polygons)
 #> Data source: https://catalogue.ceh.ac.uk/documents/084e0bc6-e67f-4dad-9de6-0c698f60e34d
-corine.gb <- st_read(here("In", "Shape", "corine_2018_GB.shp"), quiet = TRUE)
+corine.gb <- st_read(here("In", "Shape", "corine", "data", "clc2018_uk.shp"), quiet = TRUE)
 #> Select only agri land classes:
 # 211 - Non-irrigated arable land
 # 212 - Permanently irrigated land
@@ -183,9 +214,8 @@ corine.clip <- st_intersection(corine.agri,cornwall.sf)
 
 ```
 
-
-
 *Figure 1.2.1 Extent of agricultural land (derived from Corine 2018)*
+
 ```{r out.width='100%', echo=TRUE}
 
 #> This code chunk produces an interactive leafelt map of the SW region with Corine agri land shown
@@ -211,20 +241,35 @@ leaflet() |>
 
 ```
 
-
 ### 1.3 Reduction calculations
 
-With all the required input data in place, P1 payments at county level can now be computed. A brief overview of the workflow: <br />
+With all the required input data in place, P1 payments at county level
+can now be computed. A brief overview of the workflow: <br />
 
-- **Step 1**: Select the four target counties from the GB county data layer <br />
-- **Step 2**: Initiate a programming loop based on the counties (i.e. same code block is run for each county in turn) <br />
-- **Step 3**: Create a spatial layer of postcode districts that spatially intersect with the "active" county  <br />
-- **Step 4**: Create a spatial layer of postcode districts clipped exactly to the extent of the "active" county  <br />
-- **Step 5**: Create a spatial layer of postcode districts clipped exactly to the extent of the "active" county  <br />
-- **Step 6**: Using the Corine data on agricultural land area (prepared in Section 1.2), calculate the agricultural land area totals for intersected postcode district polygons, and clipped postcode district polygons respectively. This gives us two values: 1) the total area of agricultural land in each postcode district, and; 2) the area of agricultural land in each postcode district that is *within* the active county  <br />
-- **Step 7**: Using the agricultural land area proportions and the P1 reduction figures, calculate the "baseline" value for P1 in 2020 and following years with payments applied up to and including 2027 <br />
-- **Step 8**: Display output tables and bar plots  <br />
-- **Step 9**: Export output tables and bar plots to CCRI shared drive  <br />
+-   **Step 1**: Select the four target counties from the GB county data
+    layer <br />
+-   **Step 2**: Initiate a programming loop based on the counties (i.e.
+    same code block is run for each county in turn) <br />
+-   **Step 3**: Create a spatial layer of postcode districts that
+    spatially intersect with the "active" county <br />
+-   **Step 4**: Create a spatial layer of postcode districts clipped
+    exactly to the extent of the "active" county <br />
+-   **Step 5**: Create a spatial layer of postcode districts clipped
+    exactly to the extent of the "active" county <br />
+-   **Step 6**: Using the Corine data on agricultural land area
+    (prepared in Section 1.2), calculate the agricultural land area
+    totals for intersected postcode district polygons, and clipped
+    postcode district polygons respectively. This gives us two values:
+    1)  the total area of agricultural land in each postcode district,
+        and; 2) the area of agricultural land in each postcode district
+        that is *within* the active county <br />
+-   **Step 7**: Using the agricultural land area proportions and the P1
+    reduction figures, calculate the "baseline" value for P1 in 2020 and
+    following years with payments applied up to and including 2027
+    <br />
+-   **Step 8**: Display output tables and bar plots <br />
+-   **Step 9**: Export output tables and bar plots to CCRI shared drive
+    <br />
 
 ```{r echo=TRUE, eval=TRUE, results='asis', fig.height = 6, fig.width = 9}
 #> Create filter string (get names first!)
@@ -616,14 +661,11 @@ write_csv(t1, here("Out", "P1", "County", "CSV", paste0("P1_payments_", active_c
 
 ```
 
-
-
 ### 1.4 Claimant numbers
 
 <br />
 
 Calculating the number of P1 claimants in each county (2020 RPA data)
-
 
 ```{r echo=TRUE, eval=TRUE, results='asis', fig.height = 6, fig.width = 9}
 
@@ -691,16 +733,14 @@ write_csv(p1.claims.total, here("Out", "Claimants", "CSV", paste0("P1_Total_Clai
 
 ```
 
-
-
-<br />
-<br />
-
-
+<br /> <br />
 
 ## 2. Pillar 1: District-level
 
-Calculation of P1 payment payments at sub-county (district unitary authority) level. Uses same basic methodology as above, but the level of data management complexity is higher due to multiple area-within-area p1 reduction calculations.
+Calculation of P1 payment payments at sub-county (district unitary
+authority) level. Uses same basic methodology as above, but the level of
+data management complexity is higher due to multiple area-within-area p1
+reduction calculations.
 
 ```{r echo=TRUE, eval=TRUE, results='asis', fig.height = 6, fig.width = 9}
 
@@ -1185,13 +1225,13 @@ district.summary <- district.summary[0,]
 }
 
 ```
-<br />
-<br />
+
+<br /> <br />
 
 ## 3. Pillar 1: National Parks
 
-Pillar one reduction analysis conducted for Exmoor and Dartmoor National Parks. National Parks boundary data from Natural England Geoportal. 
-
+Pillar one reduction analysis conducted for Exmoor and Dartmoor National
+Parks. National Parks boundary data from Natural England Geoportal.
 
 ```{r echo=TRUE, eval=TRUE, results='asis', fig.height = 6, fig.width = 9}
 
@@ -1590,38 +1630,43 @@ write_csv(t1, here("Out", "P1", "Nat_Park", "CSV", paste0("P1_payments_", active
           
 ```
 
-<br />
-<br />
+<br /> <br />
 
+## 4. Agri-Environment
 
-## 4. Agri-Environment 
-
-<br />
-<br />
-
+<br /> <br />
 
 **Methodology for AES calculations**
 
-The following datasets (ESRI shapefile format) on agri-environment payments were downloaded on 28/01/2022 from the [Natural England Open Data Geoportal](https://naturalengland-defra.opendata.arcgis.com/):
+The following datasets (ESRI shapefile format) on agri-environment
+payments were downloaded on 28/01/2022 from the [Natural England Open
+Data Geoportal](https://naturalengland-defra.opendata.arcgis.com/):
 
-- **Environmental Stewardship (ES)**: "Environmental_Stewardship_Scheme_Agreements.shp" <br />
-- **Countryside Stewardship (CS)**: "Countryside_Stewardship_Scheme_Management_Areas.shp" <br />
+-   **Environmental Stewardship (ES)**:
+    "Environmental_Stewardship_Scheme_Agreements.shp" <br />
+-   **Countryside Stewardship (CS)**:
+    "Countryside_Stewardship_Scheme_Management_Areas.shp" <br />
 
-These data differ to the P1 data in that ES and CS agreements are "point" data, which are geographically referenced using a precise x,y coordinate. Each point represents the geographical centre of each ES/CS agreement. This means that extracting agreements which fall within a specific boundary is more straightforward then with the P1 data - which is aggregated to postcode districts. The basic steps of the workflow as follows:<br />
-- **Step 1**: Initiate a programming loop based on the target boundaries (i.e. counties, national parks) <br />
-- **Step 2**: Clip AES data layer to the geographical extent of the target boundary  <br />
-- **Step 3**: For each boundary area, calculate the total AES payments for each year represented in the data layer. Note, the approaches for calculating annual totals ES and CS differ due to the structural differences of the datasets. This is quite complex and is fully documented in the R code.<br />
-- **Step 4**: Display output tables and bar plots  <br />
-- **Step 5**: Export output tables and bar plots to CCRI shared drive  <br />
-<br />
-<br />
-<br />
-
+These data differ to the P1 data in that ES and CS agreements are
+"point" data, which are geographically referenced using a precise x,y
+coordinate. Each point represents the geographical centre of each ES/CS
+agreement. This means that extracting agreements which fall within a
+specific boundary is more straightforward then with the P1 data - which
+is aggregated to postcode districts. The basic steps of the workflow as
+follows:<br /> - **Step 1**: Initiate a programming loop based on the
+target boundaries (i.e. counties, national parks) <br /> - **Step 2**:
+Clip AES data layer to the geographical extent of the target boundary
+<br /> - **Step 3**: For each boundary area, calculate the total AES
+payments for each year represented in the data layer. Note, the
+approaches for calculating annual totals ES and CS differ due to the
+structural differences of the datasets. This is quite complex and is
+fully documented in the R code.<br /> - **Step 4**: Display output
+tables and bar plots <br /> - **Step 5**: Export output tables and bar
+plots to CCRI shared drive <br /> <br /> <br /> <br />
 
 ### 4.1 ES - County-level
 
-County-level analysis of Environmental Stewardship (ES) payments. 
-
+County-level analysis of Environmental Stewardship (ES) payments.
 
 ```{r echo=TRUE, eval=TRUE, results='asis', fig.height = 6, fig.width = 9}
 
@@ -1629,6 +1674,8 @@ County-level analysis of Environmental Stewardship (ES) payments.
 #> This dataset has been extracted from the latest 914/02/2022) CS data for England
 #> The pole of inaccessibility for each ES polygon has been pre-computed in QGIS, and the points then clipped to the extent of the SW LEP to reduce processing overheads
 ES <- st_read(here("In", "Shape", "AES", "ES_SouthWest_PoI.shp"), stringsAsFactors = FALSE, quiet = TRUE)
+
+#counties <- c("Cornwall", "Devon", "Dorset", "Somerset")
 
 i <- 0
 #> Initiate loop
@@ -1845,20 +1892,16 @@ ggsave(here("Out", "AES", "ES", "County", "Plot", paste0("ES_payments_", active_
 
 #> Render table on web page
 
-
-
 }
 
 
 
 ```
 
-
-
 ### 4.2 ES - District-level
 
-
-District-level analysis of Environmental Stewardship (ES) payments. Methods overview to follow. 
+District-level analysis of Environmental Stewardship (ES) payments.
+Methods overview to follow.
 
 ```{r echo=TRUE, eval=TRUE, results='asis', fig.height = 6, fig.width = 9}
 
@@ -2181,11 +2224,10 @@ ggsave(here("Out", "AES", "ES", "District", "Plot", paste0("ES_payments_", activ
 
 ```
 
-
 ### 4.3 ES - National Parks
 
-
-National Park-level analysis of Environmental Stewardship (ES) payments. Methods overview to follow. 
+National Park-level analysis of Environmental Stewardship (ES) payments.
+Methods overview to follow.
 
 ```{r echo=TRUE, eval=TRUE, results='asis', fig.height = 6, fig.width = 9}
 
@@ -2493,13 +2535,10 @@ ggsave(here("Out", "AES", "ES", "Nat_Park", "Plot", paste0("ES_payments_", activ
 
 ```
 
-
-
-
 ### 4.4 CS - County-level
 
-
-County-level analysis of Countryside Stewardship (CS) payments. Methods overview to follow. 
+County-level analysis of Countryside Stewardship (CS) payments. Methods
+overview to follow.
 
 ```{r echo=TRUE, eval=TRUE, results='asis', fig.height = 6, fig.width = 9}
 
@@ -3030,12 +3069,10 @@ write_csv(df2, here("Out", "AES", "CS", "County", "CSV", paste0("CS_payments_", 
 
 ```
 
-
-
-
 ### 4.5 CS - District-level
 
-District-level analysis of Countryside Stewardship (CS) payments. Methods overview to follow. 
+District-level analysis of Countryside Stewardship (CS) payments.
+Methods overview to follow.
 
 ```{r echo=TRUE, eval=TRUE, results='asis', fig.height = 6, fig.width = 9}
 
@@ -3581,13 +3618,10 @@ write_csv(df2, here("Out", "AES", "CS", "District", "CSV", paste0("CS_payments_"
 
 ```
 
-
-
 ### 4.6 CS - National Parks
 
-
-National Park-level analysis of Countryside Stewardship (CS) payments. Methods overview to follow. 
-
+National Park-level analysis of Countryside Stewardship (CS) payments.
+Methods overview to follow.
 
 ```{r echo=TRUE, eval=TRUE, results='asis', fig.height = 6, fig.width = 9}
 
@@ -4119,19 +4153,17 @@ write_csv(df2, here("Out", "AES", "CS", "Nat_Park", "CSV", paste0("CS_payments_"
 
 
 ```
-<br />
 
+<br />
 
 ### 4.7 AES Claimant numbers
 
-Calculating the number of AES claimants in each county (February 2022 data - Natural England)
+Calculating the number of AES claimants in each county (February 2022
+data - Natural England)
 
 <br />
 
-
 #### Environmental Stewardship
-
-
 
 ```{r echo=TRUE, eval=TRUE, results='asis', fig.height = 6, fig.width = 9}
 
@@ -4180,9 +4212,7 @@ write_csv(ES.claimants, here("Out", "Claimants", "CSV", "ES_Claimants_by_County.
 
 ```
 
-<br />
-<br />
-
+<br /> <br />
 
 #### Countryside Stewardship
 
@@ -4233,46 +4263,13 @@ write_csv(CS.claimants, here("Out", "Claimants", "CSV", "CS_Claimants_by_County.
 
 ```
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 <br />
-
 
 ## 5. Agri land proportions calcs
 
 <br />
 
 Summary of Corine agricultural land cover types (all) by county
-
 
 ```{r echo=TRUE, eval=TRUE, results='asis', fig.height = 6, fig.width = 9}
 
